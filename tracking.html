@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Surprise for You!</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #e0c3fc, #8ec5fc);
+      color: #222;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 440px;
+      margin: 20px auto;
+      padding: 22px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      color: #7048e8;
+      margin-top: 0;
+    }
+
+    .photo {
+      width: 100%;
+      border-radius: 14px;
+      margin: 12px 0;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin: 12px 0;
+      border: none;
+      border-radius: 12px;
+      background: #7048e8;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+    }
+
+    .stop {
+      background: #e03131;
+    }
+
+    .secondary {
+      background: #1971c2;
+    }
+
+    #status {
+      padding: 12px;
+      background: #f1f3f5;
+      border-radius: 10px;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      margin-top: 15px;
+      background: black;
+      border-radius: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    a {
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+
+    <h1>🎉 Surprise!</h1>
+
+    <p>Welcome! Here's a little surprise for you 😊</p>
+
+    <img
+      class="photo"
+      src="https://picsum.photos/seed/surprise1/400/240"
+      alt="Surprise picture"
+    >
+
+    <img
+      class="photo"
+      src="https://picsum.photos/seed/surprise2/400/240"
+      alt="Another surprise picture"
+    >
+
+    <p>
+      You can choose whether to share your location
+      or open your camera.
+    </p>
+
+    <button id="locationBtn" onclick="shareLocation()">
+      📍 Share My Location
+    </button>
+
+    <button id="cameraBtn" onclick="startCamera()">
+      📸 Open Front Camera
+    </button>
+
+    <button
+      id="switchBtn"
+      class="secondary hidden"
+      onclick="switchCamera()"
+    >
+      🔄 Switch Camera
+    </button>
+
+    <button
+      id="stopBtn"
+      class="stop hidden"
+      onclick="stopCamera()"
+    >
+      🛑 Turn Camera Off
+    </button>
+
+    <video id="camera" autoplay playsinline muted hidden></video>
+
+    <div id="status" role="status" aria-live="polite">
+      Ready! Choose an option above.
+    </div>
+
+  </main>
+
+  <script>
+    const statusBox = document.getElementById("status");
+    const video = document.getElementById("camera");
+
+    let cameraStream = null;
+    let currentFacingMode = "user";
+
+    function setStatus(message) {
+      statusBox.textContent = message;
+    }
+
+    // LOCATION SHARING
+    function shareLocation() {
+      if (!window.isSecureContext) {
+        setStatus(
+          "Location requires HTTPS. Open the published website using its HTTPS link."
+        );
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        setStatus("Your browser does not support location sharing.");
+        return;
+      }
+
+      setStatus("Waiting for location permission...");
+
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          const mapUrl =
+            "https://www.openstreetmap.org/?mlat=" +
+            latitude +
+            "&mlon=" +
+            longitude +
+            "#map=16/" +
+            latitude +
+            "/" +
+            longitude;
+
+          const link = document.createElement("a");
+          link.href = mapUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Open shared location on map";
+
+          statusBox.replaceChildren();
+
+          const message = document.createElement("p");
+          message.textContent = "Location obtained with permission.";
+          statusBox.appendChild(message);
+          statusBox.appendChild(link);
+        },
+
+        function(error) {
+          const messages = {
+            1: "Location permission was denied. Allow it in your browser settings.",
+            2: "Your location is currently unavailable. Check GPS and try again.",
+            3: "Location request timed out. Please try again."
+          };
+
+          setStatus(
+            messages[error.code] || "Could not obtain your location."
+          );
+        },
+
+        {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    // CAMERA
+    async function startCamera() {
+      if (!window.isSecureContext) {
+        setStatus(
+          "Camera requires HTTPS. Open the published website using its HTTPS link."
+        );
+        return;
+      }
+
+      if (!navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia) {
+        setStatus(
+          "Camera API unavailable. Use an updated browser and an HTTPS website."
+        );
+        return;
+      }
+
+      stopCamera();
+
+      setStatus("Requesting camera permission...");
+
+      try {
+        cameraStream =
+          await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              facingMode: currentFacingMode
+            }
+          });
+
+        video.srcObject = cameraStream;
+        video.hidden = false;
+
+        await video.play();
+
+        document.getElementById("stopBtn").classList.remove("hidden");
+        document.getElementById("switchBtn").classList.remove("hidden");
+
+        setStatus(
+          "Camera is running. Your camera preview stays on this page."
+        );
+
+      } catch (error) {
+        let message = "Camera could not start.";
+
+        if (error.name === "NotAllowedError") {
+          message =
+            "Camera permission denied. Allow camera access in your browser settings.";
+        } else if (error.name === "NotFoundError") {
+          message =
+            "No compatible camera was found on this device.";
+        } else if (error.name === "NotReadableError") {
+          message =
+            "Camera may be busy. Close other camera apps and try again.";
+        } else if (error.name === "OverconstrainedError") {
+          message =
+            "This camera mode is unavailable. Try switching cameras.";
+        } else if (error.name === "SecurityError") {
+          message =
+            "The browser blocked camera access. Check the HTTPS connection and permissions.";
+        } else {
+          message = error.name + ": " + error.message;
+        }
+
+        setStatus(message);
+      }
+    }
+
+    // SWITCH BETWEEN FRONT AND REAR CAMERAS
+    async function switchCamera() {
+      currentFacingMode =
+        currentFacingMode === "user" ? "environment" : "user";
+
+      await startCamera();
+    }
+
+    // STOP CAMERA AND RELEASE ACCESS
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(function(track) {
+          track.stop();
+        });
+
+        cameraStream = null;
+      }
+
+      video.srcObject = null;
+      video.hidden = true;
+
+      document.getElementById("stopBtn").classList.add("hidden");
+      document.getElementById("switchBtn").classList.add("hidden");
+    }
+
+    // Stop camera if the visitor leaves the page.
+    window.addEventListener("pagehide", stopCamera);
+  </script>
+</body>
+</html>
