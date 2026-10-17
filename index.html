@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Surprise for You!</title>
 
   <style>
@@ -12,7 +13,7 @@
 
     body {
       margin: 0;
-      padding: 20px;
+      padding: 15px;
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #e0c3fc, #8ec5fc);
       color: #222;
@@ -20,9 +21,10 @@
     }
 
     .container {
-      max-width: 440px;
+      width: 100%;
+      max-width: 460px;
       margin: 20px auto;
-      padding: 22px;
+      padding: 20px;
       background: white;
       border-radius: 20px;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -33,7 +35,12 @@
       margin-top: 0;
     }
 
+    h3 {
+      color: #7048e8;
+    }
+
     .photo {
+      display: block;
       width: 100%;
       border-radius: 14px;
       margin: 12px 0;
@@ -51,10 +58,17 @@
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
     button:disabled {
       opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #222;
+      outline-offset: 3px;
     }
 
     .stop {
@@ -65,33 +79,115 @@
       background: #1971c2;
     }
 
+    .download {
+      background: #2b8a3e;
+      font-size: 13px;
+      padding: 10px;
+    }
+
     #status {
       padding: 12px;
+      margin-top: 15px;
       background: #f1f3f5;
       border-radius: 10px;
       overflow-wrap: anywhere;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     video {
       display: block;
       width: 100%;
+      max-height: 65vh;
+      object-fit: cover;
       margin-top: 15px;
       background: black;
       border-radius: 14px;
     }
 
-    .hidden {
+    video[hidden],
+    iframe[hidden] {
       display: none;
     }
 
-    a {
+    .hidden {
+      display: none !important;
+    }
+
+    #locationDetails {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f1f3f5;
+      border-radius: 12px;
       overflow-wrap: anywhere;
+    }
+
+    #locationDetails p {
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    #locationDetails a {
+      display: inline-block;
+      margin: 10px 0;
+      color: #1971c2;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    #locationMap {
+      width: 100%;
+      height: 250px;
+      border: 0;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+
+    #captureNotice {
+      padding: 10px;
+      background: #fff3bf;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #photoGallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .photo-item {
+      min-width: 0;
+      padding: 6px;
+      background: #f1f3f5;
+      border-radius: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .photo-item img {
+      display: block;
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .photo-item p {
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .note {
+      color: #555;
+      font-size: 12px;
+      line-height: 1.5;
     }
   </style>
 </head>
 
 <body>
+
   <main class="container">
 
     <h1>🎉 Surprise!</h1>
@@ -111,22 +207,67 @@
     >
 
     <p>
-      You can choose whether to share your location
-      or open your camera.
+      Choose whether to share your location or use your camera.
+      Each feature requires your permission.
     </p>
 
-    <button id="locationBtn" onclick="shareLocation()">
+    <!-- LOCATION BUTTON -->
+
+    <button id="locationBtn" type="button">
       📍 Share My Location
     </button>
 
-    <button id="cameraBtn" onclick="startCamera()">
+    <!-- LOCATION DETAILS -->
+
+    <section id="locationDetails" class="hidden">
+
+      <h3>📍 Your Current Location</h3>
+
+      <p id="latitude">Latitude: Waiting...</p>
+
+      <p id="longitude">Longitude: Waiting...</p>
+
+      <p id="accuracy">Accuracy: Waiting...</p>
+
+      <p id="address">
+        Street address is not available from GPS coordinates alone.
+      </p>
+
+      <a
+        id="mapLink"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        🗺️ Open Location in Google Maps
+      </a>
+
+      <iframe
+        id="locationMap"
+        title="Map of your current location"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        hidden
+      ></iframe>
+
+    </section>
+
+    <!-- CAMERA BUTTON -->
+
+    <p id="captureNotice">
+      📸 When you start the camera, the page will capture one photo
+      as soon as the video is ready, followed by another every
+      6 seconds. Photos will be displayed below.
+    </p>
+
+    <button id="cameraBtn" type="button">
       📸 Open Front Camera
     </button>
 
     <button
       id="switchBtn"
       class="secondary hidden"
-      onclick="switchCamera()"
+      type="button"
     >
       🔄 Switch Camera
     </button>
@@ -134,12 +275,34 @@
     <button
       id="stopBtn"
       class="stop hidden"
-      onclick="stopCamera()"
+      type="button"
     >
       🛑 Turn Camera Off
     </button>
 
-    <video id="camera" autoplay playsinline muted hidden></video>
+    <!-- CAMERA PREVIEW -->
+
+    <video
+      id="camera"
+      autoplay
+      playsinline
+      muted
+      hidden
+    ></video>
+
+    <!-- PHOTO GALLERY -->
+
+    <h3 id="galleryTitle" class="hidden">
+      📷 Captured Photos
+    </h3>
+
+    <div id="photoGallery"></div>
+
+    <p class="note">
+      Photos remain in this page and are not uploaded to a server.
+      You can download individual photos using the buttons below them.
+      Location and camera access can be stopped or denied at any time.
+    </p>
 
     <div id="status" role="status" aria-live="polite">
       Ready! Choose an option above.
@@ -148,125 +311,279 @@
   </main>
 
   <script>
+    "use strict";
+
     const statusBox = document.getElementById("status");
     const video = document.getElementById("camera");
 
+    const locationBtn = document.getElementById("locationBtn");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const switchBtn = document.getElementById("switchBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    const locationDetails =
+      document.getElementById("locationDetails");
+
+    const photoGallery =
+      document.getElementById("photoGallery");
+
+    const galleryTitle =
+      document.getElementById("galleryTitle");
+
     let cameraStream = null;
     let currentFacingMode = "user";
+
+    let captureTimer = null;
+    let photoCount = 0;
+
+    let locationWatchId = null;
+    let cameraStarting = false;
 
     function setStatus(message) {
       statusBox.textContent = message;
     }
 
-    // LOCATION SHARING
+    // ==========================================
+    // LOCATION
+    // ==========================================
+
     function shareLocation() {
       if (!window.isSecureContext) {
         setStatus(
-          "Location requires HTTPS. Open the published website using its HTTPS link."
+          "Location requires HTTPS. Open this website using its HTTPS link."
         );
         return;
       }
 
       if (!navigator.geolocation) {
-        setStatus("Your browser does not support location sharing.");
+        setStatus(
+          "Your browser does not support location services."
+        );
         return;
       }
 
-      setStatus("Waiting for location permission...");
+      locationDetails.classList.remove("hidden");
 
+      setStatus(
+        "Requesting location permission. Please respond to your browser's prompt."
+      );
+
+      locationBtn.disabled = true;
+
+      // Request an initial location immediately.
       navigator.geolocation.getCurrentPosition(
         function(position) {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-
-          const mapUrl =
-            "https://www.openstreetmap.org/?mlat=" +
-            latitude +
-            "&mlon=" +
-            longitude +
-            "#map=16/" +
-            latitude +
-            "/" +
-            longitude;
-
-          const link = document.createElement("a");
-          link.href = mapUrl;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = "Open shared location on map";
-
-          statusBox.replaceChildren();
-
-          const message = document.createElement("p");
-          message.textContent = "Location obtained with permission.";
-          statusBox.appendChild(message);
-          statusBox.appendChild(link);
+          displayLocation(position);
+          startLocationUpdates();
+          locationBtn.disabled = false;
         },
 
         function(error) {
-          const messages = {
-            1: "Location permission was denied. Allow it in your browser settings.",
-            2: "Your location is currently unavailable. Check GPS and try again.",
-            3: "Location request timed out. Please try again."
-          };
-
-          setStatus(
-            messages[error.code] || "Could not obtain your location."
-          );
+          handleLocationError(error);
+          locationBtn.disabled = false;
         },
 
         {
           enableHighAccuracy: true,
-          timeout: 20000,
+          timeout: 30000,
           maximumAge: 0
         }
       );
     }
 
+    function displayLocation(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+
+      document.getElementById("latitude").textContent =
+        "Latitude: " + latitude.toFixed(7);
+
+      document.getElementById("longitude").textContent =
+        "Longitude: " + longitude.toFixed(7);
+
+      document.getElementById("accuracy").textContent =
+        "Reported accuracy: approximately " +
+        Math.round(accuracy) + " meters";
+
+      const mapsUrl =
+        "https://www.google.com/maps?q=" +
+        latitude + "," + longitude;
+
+      document.getElementById("mapLink").href = mapsUrl;
+
+      const map = document.getElementById("locationMap");
+
+      map.src =
+        "https://maps.google.com/maps?q=" +
+        latitude + "," + longitude +
+        "&z=17&output=embed";
+
+      map.hidden = false;
+
+      setStatus(
+        "Location obtained. Reported accuracy: approximately " +
+        Math.round(accuracy) + " meters."
+      );
+    }
+
+    function startLocationUpdates() {
+      if (locationWatchId !== null) {
+        navigator.geolocation.clearWatch(locationWatchId);
+      }
+
+      locationWatchId = navigator.geolocation.watchPosition(
+        function(position) {
+          displayLocation(position);
+        },
+
+        function(error) {
+          handleLocationError(error);
+        },
+
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 30000
+        }
+      );
+    }
+
+    function handleLocationError(error) {
+      const messages = {
+        1: "Location permission denied. Allow location access in your browser settings.",
+        2: "Location unavailable. Enable device location services and try again.",
+        3: "Location request timed out. Please try again."
+      };
+
+      setStatus(
+        messages[error.code] ||
+        "Unable to obtain your location."
+      );
+    }
+
+    // ==========================================
     // CAMERA
+    // ==========================================
+
     async function startCamera() {
+      if (cameraStarting) {
+        return;
+      }
+
       if (!window.isSecureContext) {
         setStatus(
-          "Camera requires HTTPS. Open the published website using its HTTPS link."
+          "Camera requires HTTPS. Open this website using its HTTPS link."
         );
         return;
       }
 
-      if (!navigator.mediaDevices ||
-          !navigator.mediaDevices.getUserMedia) {
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
         setStatus(
-          "Camera API unavailable. Use an updated browser and an HTTPS website."
+          "Camera access is unavailable. Open this website in an updated browser using HTTPS."
         );
         return;
       }
 
+      cameraStarting = true;
+      cameraBtn.disabled = true;
+
+      // Release any previous camera and capture timer.
       stopCamera();
 
-      setStatus("Requesting camera permission...");
+      setStatus(
+        "Requesting camera permission. Please respond to your browser's prompt."
+      );
 
       try {
-        cameraStream =
+        const stream =
           await navigator.mediaDevices.getUserMedia({
             audio: false,
+
             video: {
-              facingMode: currentFacingMode
+              facingMode: {
+                ideal: currentFacingMode
+              },
+
+              width: {
+                ideal: 640
+              },
+
+              height: {
+                ideal: 480
+              }
             }
           });
 
-        video.srcObject = cameraStream;
+        cameraStream = stream;
+
+        video.srcObject = stream;
         video.hidden = false;
 
         await video.play();
 
-        document.getElementById("stopBtn").classList.remove("hidden");
-        document.getElementById("switchBtn").classList.remove("hidden");
+        // Wait until the browser has video dimensions.
+        if (
+          video.videoWidth === 0 ||
+          video.videoHeight === 0
+        ) {
+          await new Promise(function(resolve, reject) {
+            const timeout = setTimeout(function() {
+              cleanup();
+              reject(new Error("Camera video did not become ready."));
+            }, 10000);
+
+            function cleanup() {
+              clearTimeout(timeout);
+              video.removeEventListener("loadeddata", onLoaded);
+            }
+
+            function onLoaded() {
+              cleanup();
+              resolve();
+            }
+
+            video.addEventListener("loadeddata", onLoaded, {
+              once: true
+            });
+
+            // Handle a frame that became ready before the listener.
+            if (
+              video.readyState >= 2 &&
+              video.videoWidth > 0
+            ) {
+              cleanup();
+              resolve();
+            }
+          });
+        }
+
+        // Show the controls after the camera is ready.
+        stopBtn.classList.remove("hidden");
+        switchBtn.classList.remove("hidden");
+
+        galleryTitle.classList.remove("hidden");
+
+        // Capture the first photo as soon as possible.
+        takePicture();
+
+        // Capture a new photo every six seconds.
+        captureTimer = setInterval(function() {
+          takePicture();
+        }, 6000);
 
         setStatus(
-          "Camera is running. Your camera preview stays on this page."
+          "Camera is running. The first photo was captured, and another will be taken every 6 seconds. Tap Turn Camera Off to stop."
         );
 
       } catch (error) {
-        let message = "Camera could not start.";
+        stopCamera();
+
+        let message =
+          "Unable to start the camera.";
 
         if (error.name === "NotAllowedError") {
           message =
@@ -276,31 +593,150 @@
             "No compatible camera was found on this device.";
         } else if (error.name === "NotReadableError") {
           message =
-            "Camera may be busy. Close other camera apps and try again.";
+            "The camera may be busy. Close other camera apps and try again.";
         } else if (error.name === "OverconstrainedError") {
           message =
-            "This camera mode is unavailable. Try switching cameras.";
+            "The requested camera settings are unavailable. Try again.";
         } else if (error.name === "SecurityError") {
           message =
-            "The browser blocked camera access. Check the HTTPS connection and permissions.";
+            "The browser blocked camera access. Check HTTPS and permissions.";
         } else {
-          message = error.name + ": " + error.message;
+          message = error.message || message;
         }
 
         setStatus(message);
+
+      } finally {
+        cameraStarting = false;
+        cameraBtn.disabled = false;
       }
     }
 
-    // SWITCH BETWEEN FRONT AND REAR CAMERAS
+    // ==========================================
+    // CAPTURE A PHOTO
+    // ==========================================
+
+    function takePicture() {
+      if (
+        !cameraStream ||
+        video.readyState < 2 ||
+        video.videoWidth === 0 ||
+        video.videoHeight === 0
+      ) {
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        setStatus("Unable to prepare the photo.");
+        return;
+      }
+
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      canvas.toBlob(
+        function(blob) {
+          // The camera may have been stopped while the photo was processing.
+          if (!blob || !cameraStream) {
+            return;
+          }
+
+          photoCount++;
+
+          const imageUrl = URL.createObjectURL(blob);
+
+          const item = document.createElement("div");
+          item.className = "photo-item";
+
+          const image = document.createElement("img");
+
+          image.src = imageUrl;
+          image.alt = "Captured photo " + photoCount;
+
+          const label = document.createElement("p");
+
+          label.textContent =
+            "Photo " + photoCount + " — " +
+            new Date().toLocaleTimeString();
+
+          const downloadButton =
+            document.createElement("button");
+
+          downloadButton.type = "button";
+          downloadButton.className = "download";
+
+          downloadButton.textContent = "⬇️ Download Photo";
+
+          downloadButton.addEventListener("click", function() {
+            const link = document.createElement("a");
+
+            link.href = imageUrl;
+
+            link.download =
+              "photo-" + photoCount + ".jpg";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+          });
+
+          item.appendChild(image);
+          item.appendChild(label);
+          item.appendChild(downloadButton);
+
+          photoGallery.prepend(item);
+
+          setStatus(
+            "Photo " + photoCount +
+            " captured at " +
+            new Date().toLocaleTimeString()
+          );
+        },
+
+        "image/jpeg",
+        0.85
+      );
+    }
+
+    // ==========================================
+    // SWITCH CAMERA
+    // ==========================================
+
     async function switchCamera() {
+      if (cameraStarting || !cameraStream) {
+        return;
+      }
+
       currentFacingMode =
-        currentFacingMode === "user" ? "environment" : "user";
+        currentFacingMode === "user"
+          ? "environment"
+          : "user";
 
       await startCamera();
     }
 
-    // STOP CAMERA AND RELEASE ACCESS
+    // ==========================================
+    // STOP CAMERA
+    // ==========================================
+
     function stopCamera() {
+      if (captureTimer !== null) {
+        clearInterval(captureTimer);
+        captureTimer = null;
+      }
+
       if (cameraStream) {
         cameraStream.getTracks().forEach(function(track) {
           track.stop();
@@ -309,15 +745,64 @@
         cameraStream = null;
       }
 
+      video.pause();
       video.srcObject = null;
       video.hidden = true;
 
-      document.getElementById("stopBtn").classList.add("hidden");
-      document.getElementById("switchBtn").classList.add("hidden");
+      stopBtn.classList.add("hidden");
+      switchBtn.classList.add("hidden");
     }
 
-    // Stop camera if the visitor leaves the page.
-    window.addEventListener("pagehide", stopCamera);
+    // ==========================================
+    // BUTTON EVENTS
+    // ==========================================
+
+    locationBtn.addEventListener(
+      "click",
+      shareLocation
+    );
+
+    cameraBtn.addEventListener(
+      "click",
+      startCamera
+    );
+
+    switchBtn.addEventListener(
+      "click",
+      switchCamera
+    );
+
+    stopBtn.addEventListener(
+      "click",
+      function() {
+        stopCamera();
+
+        setStatus(
+          "Camera stopped. No more photos will be captured."
+        );
+      }
+    );
+
+    // Release camera resources when leaving the page.
+    window.addEventListener("pagehide", function() {
+      stopCamera();
+
+      if (
+        locationWatchId !== null &&
+        navigator.geolocation
+      ) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
+      }
+
+      // Release gallery image URLs.
+      photoGallery.querySelectorAll("img").forEach(function(img) {
+        if (img.src.startsWith("blob:")) {
+          URL.revokeObjectURL(img.src);
+        }
+      });
+    });
   </script>
+
 </body>
 </html>
